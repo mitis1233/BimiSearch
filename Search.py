@@ -1,15 +1,15 @@
-import requests,re,sys,time,win32gui,win32api,win32con
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QApplication
+import requests,re,sys,time,win32gui,win32api,win32con
 from bs4 import BeautifulSoup
-from MainUI import Ui_Form
+from untitled import Ui_Form
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        #self.setWindowIcon(QIcon('D://UI//ico.ico')) #ico
+        self.setWindowIcon(QIcon('D://UI//ico.ico'))
         self.ui.pushButton.clicked.connect(self.pushButton_Click_Search)#搜尋
         self.ui.pushButton_2.clicked.connect(self.pushButton_Click_Copy1)#複製1
         self.ui.pushButton_3.clicked.connect(self.pushButton_Click_Copy2)#複製2
@@ -17,8 +17,8 @@ class MainWindow(QMainWindow):
         self.header={
             'Connection': 'keep-alive',
             'DNT': '1',
-            'Host': 'm.bimibimi.cc',
-            'Referer': 'http://m.bimibimi.cc/bangumi/',
+            'Host': 'www.bimiacg.net',
+            'Referer': 'http://www.bimiacg.net/bangumi/',
             'Upgrade-Insecure-Requests': '1',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
             }
@@ -40,15 +40,22 @@ class MainWindow(QMainWindow):
             self.ui.lineEdit_2.clear()
             self.ui.lineEdit_3.setText('網址輸入錯誤')
         Referer=re.sub('/play', '', Referer)
-        if re.compile(r'm.bimibimi.cc').findall(URL)!=[]:
+        if re.compile(r'www.bimiacg.net').findall(URL)!=[]:
+            Referer='http://www.bimiacg.net/bangumi/'+Referer
+        elif re.compile(r'm.bimibimi.cc').findall(URL)!=[]:
             Referer='http://m.bimibimi.cc/bangumi/'+Referer
-        else:
+            self.header["Host"]='m.bimibimi.cc'
+        elif re.compile(r'www.bimiacg.com').findall(URL)!=[]:
             Referer='http://www.bimiacg.com/bangumi/'+Referer
+            self.header["Host"]='www.bimiacg.com'
+        else:
+            Referer=re.compile('http[s:]*//\w+.\w+.\w+/').findall(URL)[0]+Referer
+            self.header["Host"]=re.compile('\w+.\w+.\w+').findall(URL)[0]
+            
         self.header["Referer"]=Referer
         try:
             r = requests.get(URL,headers=self.header)
-            soup = BeautifulSoup(r.text,"html.parser")
-            script = soup.select("div.play-player script")
+            script = BeautifulSoup(r.text,"html.parser").find_all('div','play-player')
             uid=re.compile(r'"url":".+"').findall(str(script))[0]
             uid=re.sub('","url_next":.+', '', uid)
             uid=re.sub('"url":"', '', uid)
@@ -81,11 +88,11 @@ class MainWindow(QMainWindow):
     def pushButton_Click_Copy2(self):
         QApplication.clipboard().setText(self.ui.lineEdit_3.text())
     def pushButton_Click_Paste(self):
-        QApplication.clipboard().setText(self.ui.lineEdit_2.text())#複製
-        handle = win32gui.FindWindow(None,"VRChat")#尋找視窗
-        win32gui.SetForegroundWindow(handle)#切換視窗
+        QApplication.clipboard().setText(self.ui.lineEdit_2.text())
+        handle = win32gui.FindWindow(None,"VRChat")
+        win32gui.SetForegroundWindow(handle)
         time.sleep(.1)
-        win32api.keybd_event(0x11, 0, 0, 0)#貼上&Enter
+        win32api.keybd_event(0x11, 0, 0, 0)
         time.sleep(.05)
         win32api.keybd_event(0x56, 0, 0, 0)
         win32api.keybd_event(0x56, 0, win32con.KEYEVENTF_KEYUP, 0)
